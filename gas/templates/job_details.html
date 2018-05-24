@@ -1,0 +1,36 @@
+<!--
+job_details.html - Display job details
+-->
+{% extends "base.html" %}
+{% block title %}Annotations{% endblock %}
+{% block body %}
+  {% include "header.html" %}
+  <div class="container">
+    <div class="page-header">
+      <h1>Annotation details</h1>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        {% if job_details %}
+
+          {% if job_details == "not_authorized" %}
+            <p>You are not authorized to view this job</p>
+
+          {% else %}
+            <p><strong>Request ID:</strong> {{job_details.job_id}}</p>
+            <p><strong>Request Time:</strong> {{job_details.request_time}}</p>
+            <p><strong>VCF Input File:</strong> {{job_details.file_name}}</p>
+            <p><strong>Status:</strong> {{job_details.status}}</p>
+            <p><strong>Annotated Results File:</strong> <a href={{job_details.results_file}}>download</a></p>
+            <p><strong>Annotation Log File:</strong> <a href={{job_details.log_file}}>view</a></p>
+          {% endif %}
+        {% else %}
+
+          <p>Job not found.</p>
+
+        {% endif %}
+      </div>
+    </div>
+  </div> <!-- container -->
+{% endblock %}

@@ -1,0 +1,6 @@
+#!/home/ubuntu/.virtualenvs/mpcs/bin/python3
+import jpterm
+
+
+if __name__ == '__main__':
+    jpterm.main()
