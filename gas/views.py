@@ -105,10 +105,17 @@ def create_annotation_job_request():
 
   # Persist job to database
   #create a job item
+
+  user_id = session['primary_identity']
+  user_profile = get_profile(identity_id=session['primary_identity'])
+  user_email = user_profile.email
+  user_role = user_profile.role
+
   data = {
       'job_id': job_id,
-      'user_id': session['primary_identity'],
-      'user_email': get_profile(identity_id=session.get('primary_identity')).email,
+      'user_id': user_id,
+      'user_email': user_email,
+      'user_role': user_role,
       'input_file_name': input_file_name,
       's3_inputs_bucket': bucket_name,
       's3_key_input_file': key_name,
@@ -201,28 +208,33 @@ def annotation_details(id):
     response = ann_table.get_item(Key={'job_id': id})
     data = response.get('Item')
 
-    #generate presigned download URL for results file_name
-    s3 = boto3.client('s3')
-    url = s3.generate_presigned_url(
-      ClientMethod='get_object',
-      Params={
-        'Bucket':app.config['AWS_S3_RESULTS_BUCKET'],
-        'Key':data['s3_key_result_file']
-      }
-    )
+    job_details = {'job_id':None, 'request_time':None, 'file_name':None, 'status':None, 'complete_time':None, 'results_file':None, 'log_file':None}
 
-    #generate a url for the job log contents page
-    log_file = data['job_id'] + '/log'
+    #check if the job is complete
+    if data['job_status'] == "COMPLETED":
+      #generate presigned download URL for results file_name
+      s3 = boto3.client('s3')
+      url = s3.generate_presigned_url(
+        ClientMethod='get_object',
+        Params={
+          'Bucket':app.config['AWS_S3_RESULTS_BUCKET'],
+          'Key':data['s3_key_result_file']
+        }
+      )
+      job_details['results_file'] = url
+
+      #generate a url for the job log contents page
+      log_file = data['job_id'] + '/log'
+      job_details['log_file'] = log_file
+
+      #record completion time
+      job_details['complete_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['complete_time']))
 
     #parse the data into a dict
-    job_details = {'job_id':None, 'request_time':None, 'file_name':None, 'status':None, 'complete_time':None, 'results_file':None, 'log_file':None}
     job_details['job_id'] = data['job_id']
     job_details['request_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['submit_time'])) #https://stackoverflow.com/questions/12400256/converting-epoch-time-into-the-datetime
     job_details['file_name'] = data['input_file_name']
     job_details['status'] = data['job_status']
-    job_details['complete_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['complete_time']))
-    job_details['results_file'] = url
-    job_details['log_file'] = log_file
 
     return render_template('job_details.html', job_details=job_details)
 
@@ -252,17 +264,15 @@ def annotation_log(id):
     job_list.append(job_id)
 
   if id in job_list:
-    # Get annotation to display
+    # Get log file
     response = ann_table.get_item(Key={'job_id': id})
     data = response.get('Item')
     s3_key_log_file = data['s3_key_log_file']
 
-    #generate presigned download URL for results file_name
+    #read log file contents
     s3 = boto3.resource('s3')
     log_file = s3.Object(app.config['AWS_S3_RESULTS_BUCKET'], s3_key_log_file)
     log = log_file.get()['Body'].read().decode('utf-8')
-
-    #parse the data into a dict
 
     return render_template('job_log.html', log=log)
 

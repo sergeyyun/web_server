@@ -261,3 +261,25 @@ ls
 rmate utils.py
 ./run_gas.sh
 ./run_gas.sh console
+workon mpcs
+cd gas
+ls
+./run_gas.sh
+rmate views.py
+./run_gas.sh
+./run_gas.sh console
+ls templates
+rmate templates/job_details.html
+./run_gas.sh console
+rmate templates/annotate.html
+./run_gas.sh console
+rmate config.py
+./run_gas.sh console
+rmate views.py
+./run_gas.sh console
+rmate config.py
+./run_gas.sh console
+ls
+cd gas
+workon mpcs
+./run_gas.sh console

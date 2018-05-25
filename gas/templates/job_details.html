@@ -22,8 +22,11 @@ job_details.html - Display job details
             <p><strong>Request Time:</strong> {{job_details.request_time}}</p>
             <p><strong>VCF Input File:</strong> {{job_details.file_name}}</p>
             <p><strong>Status:</strong> {{job_details.status}}</p>
+
+            {% if job_details.status == "COMPLETED" %}
             <p><strong>Annotated Results File:</strong> <a href={{job_details.results_file}}>download</a></p>
             <p><strong>Annotation Log File:</strong> <a href={{job_details.log_file}}>view</a></p>
+            {% endif %}
           {% endif %}
         {% else %}
 
