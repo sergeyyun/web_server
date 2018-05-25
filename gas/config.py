@@ -57,8 +57,8 @@ class Config(object):
   AWS_DYNAMODB_ANNOTATIONS_TABLE = "syun0_annotations"
 
   # Stripe API keys
-  STRIPE_PUBLIC_KEY = "<your_stripe_TEST_pulic_key>"
-  STRIPE_SECRET_KEY = "<your_stripe_TEST_secret_key>"
+  STRIPE_PUBLIC_KEY = "pk_test_1pW25yKylAIrNqxaxWDQn9p7"
+  STRIPE_SECRET_KEY = "sk_test_Nta46kZlIBerFWiRMzYji4rP"
 
   # Change the email address to your username
   MAIL_DEFAULT_SENDER = "syun0@ucmpcs.org"

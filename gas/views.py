@@ -288,7 +288,47 @@ import stripe
 @app.route('/subscribe', methods=['GET', 'POST'])
 @authenticated
 def subscribe():
-  pass
+
+#https://stripe.com/docs/
+
+  if request.method == 'POST':
+    stripe.api_key = app.config['STRIPE_SECRET_KEY']
+    token = request.form['stripe_token']
+
+    # Create a Customer:
+    user_id = session['primary_identity']
+    user_profile = get_profile(identity_id=session['primary_identity'])
+    user_email = user_profile.email
+    customer = stripe.Customer.create(
+      source=token,
+      email=user_email,
+    )
+
+    # Create the Subscription
+    stripe.Subscription.create(
+      customer=customer.id,
+      items=[
+        {
+          "plan": "premium_plan",
+          "quantity": 1,
+        },
+      ]
+    )
+
+    #update profile in the database
+    update_profile(
+      identity_id=session['primary_identity'],
+      role="premium_user")
+
+    customer_id = customer.id
+    print("successfully charged customer ID " + customer_id)
+    return render_template('subscribe_confirm.html', stripe_id=customer_id)
+
+  else:
+    return render_template('subscribe.html')
+
+
+
 
 
 """DO NOT CHANGE CODE BELOW THIS LINE

@@ -283,3 +283,9 @@ ls
 cd gas
 workon mpcs
 ./run_gas.sh console
+git add .
+git status
+git commit -m '7 done'
+git push origin master
+workon mpcs
+cd gas
