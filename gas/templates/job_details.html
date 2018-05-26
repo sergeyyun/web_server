@@ -24,7 +24,11 @@ job_details.html - Display job details
             <p><strong>Status:</strong> {{job_details.status}}</p>
 
             {% if job_details.status == "COMPLETED" %}
-            <p><strong>Annotated Results File:</strong> <a href={{job_details.results_file}}>download</a></p>
+            {% if job_details.archived == true %}
+              <p><strong>Annotated Results File:</strong> <a href={{url_for('subscribe')}}>Upgrade to Premium for download</a></p>
+            {% else %}
+              <p><strong>Annotated Results File:</strong> <a href={{job_details.results_file}}>download</a></p>
+            {% endif %}
             <p><strong>Annotation Log File:</strong> <a href={{job_details.log_file}}>view</a></p>
             {% endif %}
           {% endif %}

@@ -208,7 +208,7 @@ def annotation_details(id):
     response = ann_table.get_item(Key={'job_id': id})
     data = response.get('Item')
 
-    job_details = {'job_id':None, 'request_time':None, 'file_name':None, 'status':None, 'complete_time':None, 'results_file':None, 'log_file':None}
+    job_details = {'job_id':None, 'request_time':None, 'file_name':None, 'status':None, 'complete_time':None, 'results_file':None, 'log_file':None, 'archived':False}
 
     #check if the job is complete
     if data['job_status'] == "COMPLETED":
@@ -229,6 +229,10 @@ def annotation_details(id):
 
       #record completion time
       job_details['complete_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['complete_time']))
+
+      #check if job has been archived
+      if data['archived'] == True:
+        job_details['archived'] = True
 
     #parse the data into a dict
     job_details['job_id'] = data['job_id']
@@ -326,6 +330,16 @@ def subscribe():
 
   else:
     return render_template('subscribe.html')
+
+
+@app.route('/premium_cancel', methods=['GET'])
+@authenticated
+def premium_cancel():
+  #update profile in the database
+  update_profile(
+    identity_id=session['primary_identity'],
+    role="free_user")
+  return render_template('premium_cancel.html')
 
 
 

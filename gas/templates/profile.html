@@ -45,11 +45,11 @@ University of Chicago
         </div>
       </div>
 
-      <p><strong>Current Plan</strong>: 
+      <p><strong>Current Plan</strong>:
         {% if session['role'] == "free_user" %}
         Free &middot; <a href="{{url_for('subscribe')}}">ugrade to Premium plan</a>
         {% else %}
-        Premium &middot; <a href="#">cancel my Premium plan</a>
+        Premium &middot; <a href="{{url_for('premium_cancel')}}">cancel my Premium plan</a>
         {% endif %}
       </p>
 
