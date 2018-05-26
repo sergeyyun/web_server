@@ -289,3 +289,78 @@ git commit -m '7 done'
 git push origin master
 workon mpcs
 cd gas
+workon mpcs
+pkill gunicorn
+cd gas
+ls
+./run_gas.sh console
+rmate config.py
+rmate scripts.html
+ls
+ls templates
+rmate templates/scripts.html
+rmate templates/subscribe.html
+rmate views.py
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+ls templates
+./run_gas.sh console
+ls templates
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+ls templates
+rmate templates/subscribe_confirm.html
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+cd ..
+git add .
+git commit -m "8 a-f done"
+git push origin master
+ls
+cd gas
+ls
+ls templates
+rmate job_details.html
+rmate templates/job_details.html
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+ls
+ls templates
+rmate profile.html
+rmate templates/profile.html
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+echo "" > templates/premium_cancel.html
+rmate templates/premium_cancel.html
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+ls templates
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+cd ..
+git add .
+git commit -m '8 done'
+git push origin master

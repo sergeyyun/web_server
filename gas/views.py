@@ -120,7 +120,8 @@ def create_annotation_job_request():
       's3_inputs_bucket': bucket_name,
       's3_key_input_file': key_name,
       'submit_time': int(time.time()),
-      'job_status': 'PENDING'
+      'job_status': 'PENDING',
+      'archived': 'false'
   }
 
   #upload job item to the database
@@ -231,8 +232,8 @@ def annotation_details(id):
       job_details['complete_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['complete_time']))
 
       #check if job has been archived
-      if data['archived'] == True:
-        job_details['archived'] = True
+      if data['archived'] == 'true':
+        job_details['archived'] = 'true'
 
     #parse the data into a dict
     job_details['job_id'] = data['job_id']
