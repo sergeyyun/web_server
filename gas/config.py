@@ -48,6 +48,7 @@ class Config(object):
   AWS_S3_ENCRYPTION = "AES256"
 
   AWS_GLACIER_VAULT = "ucmpcs"
+  AWS_SNS_RETRIEVAL_TOPIC = "arn:aws:sns:us-east-1:127134666975:syun0_retrieval"
 
   # Change the ARNs below to reflect your SNS topics
   AWS_SNS_JOB_REQUEST_TOPIC = "arn:aws:sns:us-east-1:127134666975:syun0_job_requests"

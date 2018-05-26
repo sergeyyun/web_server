@@ -364,3 +364,29 @@ cd ..
 git add .
 git commit -m '8 done'
 git push origin master
+ls
+workon mpcs
+./run_gas.sh console
+cd gas
+./run_gas.sh console
+pkill gunicorn
+rmate views.py
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+git add .
+cd ..
+git add .
+git commit -m 'bug fixing'
+./run_gas.sh console
+cd gas
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+rmate config.py
+pkill gunicorn
+./run_gas.sh console

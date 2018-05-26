@@ -325,6 +325,44 @@ def subscribe():
       identity_id=session['primary_identity'],
       role="premium_user")
 
+    #initiate archival restoration jobs
+    #connect to the dynamodb database
+    try:
+      dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+      ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
+    except Exception:
+      print("Error: failed to connect to the database")
+    #query dynamodb for all user's jobs
+    response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+    data = response.get('Items')
+    #find all archived jobs and retrieve their archive id's
+    archived_job_list = []
+    for item in data:
+      if item['archived'] == 'true':
+        job_details = {'job_id':None, 'results_file_archive_id':None, 's3_key_result_file':None}
+        job_details['job_id'] = item['job_id']
+        job_details['results_file_archive_id'] = item['results_file_archive_id']
+        job_details['s3_key_result_file'] = item['s3_key_result_file']
+        archived_job_list.append(job_details)
+    #initiate restoration from Glacier
+    try:
+      glacier_client = boto3.client('glacier', region_name=app.config['AWS_REGION_NAME'])
+    except Exception:
+      print("Error: failed to connect to Glacier storage")
+
+    for job in archived_job_list:
+      response = glacier_client.initiate_job(
+        vaultName=app.config['AWS_GLACIER_VAULT'],
+        jobParameters={
+          'Type': 'archive-retrieval',
+          'Description': job['s3_key_result_file'],
+          'ArchiveId': job['results_file_archive_id'],
+          'SNSTopic': app.config['AWS_SNS_RETRIEVAL_TOPIC'],
+          'Tier': 'Expedited'
+        }
+      )
+      print('file ' + job['s3_key_result_file'] + ' is being retrieved from Glacier')
+
     customer_id = customer.id
     print("successfully charged customer ID " + customer_id)
     return render_template('subscribe_confirm.html', stripe_id=customer_id)
