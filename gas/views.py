@@ -84,68 +84,63 @@ def create_annotation_job_request():
   bucket_name = request.args.get('bucket')
   key_name = request.args.get('key')
 
-  # Extract the job ID from the S3 key
-  #extract uuid from key using regular expressions
+  #extract job id from s3 key using regular expressions
   job_id = ""
   m = re.search('/.+/(.+?)~', key_name)
   try:
     job_id = m.group(1)
   except Exception:
-    response = 'Error: could not extract job ID from file key'
-    return jsonify({'code': 500, 'message': response})
+    print('Error: could not extract job ID from file key')
+    return abort(500)
 
-#extract file name from key using regular expressions
+#extract file name from s3 key using regular expressions
   input_file_name = ""
   m = re.search('~(.*)', key_name)
   try:
     input_file_name = m.group(1)
   except Exception:
-    response = 'Error: could not extract file name from file key'
-    return jsonify({'code': 500, 'message': response})
+    print('Error: could not extract file name from file key')
+    return abort(500)
 
   # Persist job to database
   #create a job item
-
   user_id = session['primary_identity']
   user_profile = get_profile(identity_id=session['primary_identity'])
   user_email = user_profile.email
   user_role = user_profile.role
 
   data = {
-      'job_id': job_id,
-      'user_id': user_id,
-      'user_email': user_email,
-      'user_role': user_role,
-      'input_file_name': input_file_name,
-      's3_inputs_bucket': bucket_name,
-      's3_key_input_file': key_name,
-      'submit_time': int(time.time()),
-      'job_status': 'PENDING',
-      'archived': 'false'
+    'job_id': job_id,
+    'user_id': user_id,
+    'user_email': user_email,
+    'user_role': user_role,
+    'input_file_name': input_file_name,
+    's3_inputs_bucket': bucket_name,
+    's3_key_input_file': key_name,
+    'submit_time': int(time.time()),
+    'job_status': 'PENDING',
+    'archived': 'false'
   }
 
   #upload job item to the database
-  dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-
-  ann_table_name = app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE']
-  ann_table = dynamodb.Table(ann_table_name)
+  dynamodb = boto3.resource('dynamodb', region_name=app.config['AWS_REGION_NAME'])
+  ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
   try:
     ann_table.put_item(Item = data)
   except Exception:
-    response = 'Error: could not save job in the database'
-    return jsonify({'code': 500, 'message': response})
-
+    print('Error: could not save job in the database')
+    return abort(500)
 
   # Send message to request queue
-  sns = boto3.client('sns', region_name='us-east-1')
+  sns = boto3.client('sns', region_name=app.config['AWS_REGION_NAME'])
   try:
-      sns.publish(
-          TopicArn = app.config['AWS_SNS_JOB_REQUEST_TOPIC'],
-          Message = json.dumps(data)
-      )
+    sns.publish(
+      TopicArn = app.config['AWS_SNS_JOB_REQUEST_TOPIC'],
+      Message = json.dumps(data)
+    )
   except Exception:
-      response = 'Error: could not publish message to SNS'
-      return jsonify({'code': 500, 'message': response})
+    print('Error: could not publish message to SNS')
+    return abort(500)
 
   return render_template('annotate_confirm.html', job_id=job_id)
 
@@ -158,15 +153,16 @@ def annotations_list():
   user_id = session['primary_identity']
 
   #connect to the dynamodb database
-  try:
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-    ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
-  except Exception:
-    print("Error: failed to connect to the database")
+  dynamodb = boto3.resource('dynamodb', region_name=app.config['AWS_REGION_NAME'])
+  ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
 
   # Get list of annotations to display
   job_list = []
-  response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+  try:
+    response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+  except Exception:
+    print('Error: failed to query the annotations database')
+    return abort(500)
   data = response.get('Items')
 
   #parse the data into a list of dicts
@@ -189,29 +185,37 @@ def annotations_list():
 def annotation_details(id):
 
   #connect to the dynamodb database
-  try:
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-    ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
-  except Exception:
-    print("Error: failed to connect to the database")
+  dynamodb = boto3.resource('dynamodb', region_name=app.config['AWS_REGION_NAME'])
+  ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
 
   #check if the job belongs to current user
+  #find user id and get all user's jobs
   user_id = session['primary_identity']
-  response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+  try:
+    response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+  except Exception:
+    print('Error: failed to verify user identity')
+    return abort(500)
   data = response.get('Items')
   job_list = []
   for item in data:
     job_id = item['job_id']
     job_list.append(job_id)
 
+  #if job id found in the user's job list, proceed
   if id in job_list:
     # Get annotation to display
-    response = ann_table.get_item(Key={'job_id': id})
+    try:
+      response = ann_table.get_item(Key={'job_id': id})
+    except Exception:
+      print('Error: failed to retrieve job information from database')
+      return abort(500)
     data = response.get('Item')
 
+    #initialize job details to pass to html template
     job_details = {'job_id':None, 'request_time':None, 'file_name':None, 'status':None, 'complete_time':None, 'results_file':None, 'log_file':None, 'archived':False}
 
-    #check if the job is complete
+    #check if the job is completed to provide results and log files
     if data['job_status'] == "COMPLETED":
       #generate presigned download URL for results file_name
       s3 = boto3.client('s3')
@@ -224,7 +228,7 @@ def annotation_details(id):
       )
       job_details['results_file'] = url
 
-      #generate a url for the job log contents page
+      #generate url for the job log contents page
       log_file = data['job_id'] + '/log'
       job_details['log_file'] = log_file
 
@@ -232,19 +236,20 @@ def annotation_details(id):
       job_details['complete_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['complete_time']))
 
       #check if job has been archived
-      if data['archived'] == 'true':
-        job_details['archived'] = 'true'
+      job_details['archived'] = data['archived']
 
-    #parse the data into a dict
+    #copy the rest of the data to job details
     job_details['job_id'] = data['job_id']
     job_details['request_time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(data['submit_time'])) #https://stackoverflow.com/questions/12400256/converting-epoch-time-into-the-datetime
     job_details['file_name'] = data['input_file_name']
     job_details['status'] = data['job_status']
 
+    #pass job data to template and render it
     return render_template('job_details.html', job_details=job_details)
 
+  #if the job does not belong to current user, abort with code 403
   else:
-    return render_template('job_details.html', job_details="not_authorized")
+    return abort(403)
 
 
 """Display the log file for an annotation job
@@ -253,36 +258,47 @@ def annotation_details(id):
 @authenticated
 def annotation_log(id):
   #connect to the dynamodb database
-  try:
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-    ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
-  except Exception:
-    print("Error: failed to connect to the database")
+  dynamodb = boto3.resource('dynamodb', region_name=app.config['AWS_REGION_NAME'])
+  ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
 
   #check if the job belongs to current user
   user_id = session['primary_identity']
-  response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+  try:
+    response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+  except Exception:
+    print('Error: failed to verify user identity')
+    return abort(500)
   data = response.get('Items')
   job_list = []
   for item in data:
     job_id = item['job_id']
     job_list.append(job_id)
 
+  #if job id found in the user's job list, proceed
   if id in job_list:
     # Get log file
-    response = ann_table.get_item(Key={'job_id': id})
+    try:
+      response = ann_table.get_item(Key={'job_id': id})
+    except Exception:
+      print('Error: failed to retrieve job information from database')
+      return abort(500)
     data = response.get('Item')
     s3_key_log_file = data['s3_key_log_file']
 
     #read log file contents
     s3 = boto3.resource('s3')
-    log_file = s3.Object(app.config['AWS_S3_RESULTS_BUCKET'], s3_key_log_file)
-    log = log_file.get()['Body'].read().decode('utf-8')
+    try:
+      log_file = s3.Object(app.config['AWS_S3_RESULTS_BUCKET'], s3_key_log_file)
+      log = log_file.get()['Body'].read().decode('utf-8')
+    except Exception:
+      print('Error: failed to read log file contents')
+      return abort(500)
 
     return render_template('job_log.html', log=log)
 
+  #if the job does not belong to current user, abort with code 403
   else:
-    return render_template('job_log.html', log="not_authorized")
+    return abort(403)
 
 
 
@@ -327,14 +343,27 @@ def subscribe():
 
     #initiate archival restoration jobs
     #connect to the dynamodb database
-    try:
-      dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-      ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
-    except Exception:
-      print("Error: failed to connect to the database")
+    dynamodb = boto3.resource('dynamodb', region_name=app.config['AWS_REGION_NAME'])
+    ann_table = dynamodb.Table(app.config['AWS_DYNAMODB_ANNOTATIONS_TABLE'])
+
     #query dynamodb for all user's jobs
-    response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+    try:
+      response = ann_table.query(IndexName='user_id_index', KeyConditionExpression=Key('user_id').eq(user_id))
+    except Exception:
+      print('Error: failed to retrieve user job list')
+      return abort(500)
     data = response.get('Items')
+
+    #update user role on all user's jobs in the database
+    for item in data:
+      ann_table.update_item(
+        Key = {'job_id': item['job_id']},
+        UpdateExpression='SET user_role = :val1',
+        ExpressionAttributeValues={
+            ':val1': 'premium_user'
+          }
+        )
+
     #find all archived jobs and retrieve their archive id's
     archived_job_list = []
     for item in data:
@@ -344,23 +373,34 @@ def subscribe():
         job_details['results_file_archive_id'] = item['results_file_archive_id']
         job_details['s3_key_result_file'] = item['s3_key_result_file']
         archived_job_list.append(job_details)
+
     #initiate restoration from Glacier
-    try:
-      glacier_client = boto3.client('glacier', region_name=app.config['AWS_REGION_NAME'])
-    except Exception:
-      print("Error: failed to connect to Glacier storage")
+    glacier_client = boto3.client('glacier', region_name=app.config['AWS_REGION_NAME'])
 
     for job in archived_job_list:
-      response = glacier_client.initiate_job(
-        vaultName=app.config['AWS_GLACIER_VAULT'],
-        jobParameters={
-          'Type': 'archive-retrieval',
-          'Description': job['s3_key_result_file'],
-          'ArchiveId': job['results_file_archive_id'],
-          'SNSTopic': app.config['AWS_SNS_RETRIEVAL_TOPIC'],
-          'Tier': 'Expedited'
-        }
-      )
+      try:
+        response = glacier_client.initiate_job(
+          vaultName=app.config['AWS_GLACIER_VAULT'],
+          jobParameters={
+            'Type': 'archive-retrieval',
+            'Description': job['s3_key_result_file'],
+            'ArchiveId': job['results_file_archive_id'],
+            'SNSTopic': app.config['AWS_SNS_RETRIEVAL_TOPIC'],
+            'Tier': 'Expedited'
+          }
+        )
+      except Exception:
+        print('Error: failed to initiate retrieval job')
+        return abort(500)
+
+      #update dynamodb entry, indicating that the results files are being retrieved and the user is now premium
+      ann_table.update_item(
+        Key = {'job_id': job['job_id']},
+        UpdateExpression='SET archived = :val1',
+        ExpressionAttributeValues={
+                ':val1': 'retrieval in progress'
+            }
+        )
       print('file ' + job['s3_key_result_file'] + ' is being retrieved from Glacier')
 
     customer_id = customer.id
@@ -370,7 +410,7 @@ def subscribe():
   else:
     return render_template('subscribe.html')
 
-
+#premium user cancellation - FOR TESTING PURPOSES ONLY, does not actually cancel stripe subscription
 @app.route('/premium_cancel', methods=['GET'])
 @authenticated
 def premium_cancel():

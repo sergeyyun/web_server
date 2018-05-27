@@ -390,3 +390,61 @@ pkill gunicorn
 rmate config.py
 pkill gunicorn
 ./run_gas.sh console
+workon mpcs
+cd gas
+rmate views.py
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+rmate config.py
+ls
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+ls templates
+rmate job_details.html
+rmate templates/job_details.html
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+cd .
+cd ..
+git status
+git add .
+git commit -m '1-9 done'
+git push origin master
+cd gas
+./run_gas.sh console
+pkill gunicorn
+rmate templates/job_details.html
+rmate templates/job_log.html
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+pkill gunicorn
+./run_gas.sh console
+ls
+ls templates
+pkill gunicorn
+./run_gas.sh console

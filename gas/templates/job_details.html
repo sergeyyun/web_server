@@ -14,29 +14,27 @@ job_details.html - Display job details
       <div class="col-md-12">
         {% if job_details %}
 
-          {% if job_details == "not_authorized" %}
-            <p>You are not authorized to view this job</p>
+          <p><strong>Request ID:</strong> {{job_details.job_id}}</p>
+          <p><strong>Request Time:</strong> {{job_details.request_time}}</p>
+          <p><strong>VCF Input File:</strong> {{job_details.file_name}}</p>
+          <p><strong>Status:</strong> {{job_details.status}}</p>
 
-          {% else %}
-            <p><strong>Request ID:</strong> {{job_details.job_id}}</p>
-            <p><strong>Request Time:</strong> {{job_details.request_time}}</p>
-            <p><strong>VCF Input File:</strong> {{job_details.file_name}}</p>
-            <p><strong>Status:</strong> {{job_details.status}}</p>
-
-            {% if job_details.status == "COMPLETED" %}
+          {% if job_details.status == "COMPLETED" %}
             {% if job_details.archived == "true" %}
               <p><strong>Annotated Results File:</strong> <a href={{url_for('subscribe')}}>Upgrade to Premium for download</a></p>
             {% else %}
-              <p><strong>Annotated Results File:</strong> <a href={{job_details.results_file}}>download</a></p>
+              {% if job_details.archived == "retrieval in progress" %}
+                <p><strong>Annotated Results File</strong> is being retrieved from archive, please come back in a few minutes!</p>
+              {% else %}
+                <p><strong>Annotated Results File:</strong> <a href={{job_details.results_file}}>download</a></p>
+              {% endif %}
             {% endif %}
             <p><strong>Annotation Log File:</strong> <a href={{job_details.log_file}}>view</a></p>
-            {% endif %}
           {% endif %}
         {% else %}
-
           <p>Job not found.</p>
-
         {% endif %}
+
       </div>
     </div>
   </div> <!-- container -->

@@ -13,17 +13,9 @@ job_log.html - Display job log
     <div class="row">
       <div class="col-md-12">
         {% if log %}
-
-          {% if log == "not_authorized" %}
-            <p>You are not authorized to view this job log</p>
-
-          {% else %}
-            <p>{{log}}</p>
-          {% endif %}
+          <p>{{log}}</p>
         {% else %}
-
           <p>Job not found.</p>
-
         {% endif %}
       </div>
     </div>
