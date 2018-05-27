@@ -448,3 +448,9 @@ ls
 ls templates
 pkill gunicorn
 ./run_gas.sh console
+ls
+git add .
+git commit -m 'refactoring and error checking'
+git push origin master
+workon mpcs
+pkill gunicorn
